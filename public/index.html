@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AstroCoach - Employee Coaching System</title>
+  <link rel="stylesheet" href="/css/styles.css?v=20251210">
+</head>
+<body>
+  <!-- Login Page -->
+  <div id="login-page" class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <div class="login-brand">
+          <img src="/ican-logo.png" alt="ICAN Logo" class="login-logo">
+          <span class="login-title">AstroCoach</span>
+        </div>
+        <p class="app-subtitle">Employee Coaching System</p>
+      </div>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <input type="hidden" id="login-username" value="">
+        <div class="form-group">
+          <label for="login-password">Enter Password</label>
+          <input type="password" id="login-password" required autofocus placeholder="Password">
+        </div>
+        <div id="login-error" class="error-message"></div>
+        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="main-app" style="display: none;">
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <img src="/ican-logo.png" alt="ICAN Logo" class="sidebar-logo">
+          <span class="sidebar-title">AstroCoach</span>
+        </div>
+        <p class="sidebar-subtitle">Employee Coaching System</p>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-details">
+          <div class="user-name" id="user-display-name">Admin</div>
+          <div class="user-role" id="user-role">Administrator</div>
+        </div>
+      </div>
+      <ul class="nav-menu">
+        <li><a href="#" data-page="dashboard" class="active"><span class="nav-icon">&#9632;</span> Dashboard</a></li>
+        <li><a href="#" data-page="employees"><span class="nav-icon">&#9679;</span> Employees</a></li>
+        <li><a href="#" data-page="coaching"><span class="nav-icon">&#9650;</span> Coaching Records</a></li>
+        <li><a href="#" data-page="new-coaching"><span class="nav-icon">&#43;</span> New Coaching</a></li>
+        <li class="nav-divider" data-roles="admin,hr"></li>
+        <li data-roles="admin,hr"><a href="#" data-page="reports"><span class="nav-icon">&#9633;</span> Reports</a></li>
+        <li><a href="#" data-page="analytics"><span class="nav-icon">&#9636;</span> Analytics</a></li>
+        <li data-roles="admin"><a href="#" data-page="users"><span class="nav-icon">&#9733;</span> User Management</a></li>
+        <li data-roles="admin"><a href="#" data-page="settings"><span class="nav-icon">&#9881;</span> Settings</a></li>
+      </ul>
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <!-- Header Bar -->
+      <div class="header-bar">
+        <div class="header-title">
+          <h2 id="page-title">Dashboard</h2>
+        </div>
+        <div class="header-actions">
+          <div class="notification-bell" onclick="toggleNotifications()">
+            <span class="bell-icon">&#128276;</span>
+            <span class="notification-count" id="notification-count">0</span>
+          </div>
+          <div id="notifications-dropdown" class="notifications-dropdown">
+            <div class="notifications-header">
+              <span>Notifications</span>
+              <button onclick="markAllNotificationsRead()">Mark all read</button>
+            </div>
+            <div id="notifications-list" class="notifications-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Page -->
+      <div id="dashboard-page" class="page active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>Active Employees</h3>
+            <div class="stat-number" id="stat-employees">0</div>
+          </div>
+          <div class="stat-card warning">
+            <h3>Open Coachings</h3>
+            <div class="stat-number" id="stat-open">0</div>
+          </div>
+          <div class="stat-card alert">
+            <h3>Follow-ups Due</h3>
+            <div class="stat-number" id="stat-followups">0</div>
+          </div>
+          <div class="stat-card danger">
+            <h3>Overdue</h3>
+            <div class="stat-number" id="stat-overdue">0</div>
+          </div>
+          <div class="stat-card info" data-roles="admin,hr">
+            <h3>Pending Signatures</h3>
+            <div class="stat-number" id="stat-signatures">0</div>
+          </div>
+          <div class="stat-card" data-roles="admin,hr">
+            <h3>HR Reviews Pending</h3>
+            <div class="stat-number" id="stat-hr-reviews">0</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="dashboard-card">
+            <h3>Recent Coaching Records</h3>
+            <div id="recent-coachings"></div>
+          </div>
+          <div class="dashboard-card">
+            <h3>Upcoming Follow-ups</h3>
+            <div id="upcoming-followups"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employees Page -->
+      <div id="employees-page" class="page">
+        <div class="page-actions">
+          <div class="search-filters">
+            <input type="text" id="employee-search" placeholder="Search employees..." onkeyup="debounceSearch(loadEmployees)">
+            <select id="employee-status-filter" onchange="loadEmployees()">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="terminated">Terminated</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="syncFromNotion()" data-roles="admin,hr" title="Sync teachers from Notion database">Sync from Notion</button>
+          <span style="color: var(--gray-500); font-size: 12px; margin-left: 10px;">Employee data is managed in Notion</span>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Hire Date</th>
+                <th>Coach</th>
+                <th>Coachings</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="employees-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Coaching Records Page -->
+      <div id="coaching-page" class="page">
+        <div class="page-actions">
+          <div class="search-filters">
+            <input type="text" id="coaching-search" placeholder="Search..." onkeyup="debounceSearch(loadCoachingRecords)">
+            <select id="filter-status" onchange="loadCoachingRecords()">
+              <option value="">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="open">Open</option>
+              <option value="pending_review">Pending Review</option>
+              <option value="closed">Closed</option>
+            </select>
+            <select id="filter-type" onchange="loadCoachingRecords()">
+              <option value="">All Types</option>
+              <option value="verbal_1">1st Verbal</option>
+              <option value="verbal_2">2nd Verbal</option>
+              <option value="written">Written</option>
+              <option value="final">Final</option>
+              <option value="performance_improvement">PIP</option>
+            </select>
+            <select id="filter-category" onchange="loadCoachingRecords()">
+              <option value="">All Categories</option>
+            </select>
+            <select id="filter-severity" onchange="loadCoachingRecords()">
+              <option value="">All Severity</option>
+              <option value="minor">Minor</option>
+              <option value="moderate">Moderate</option>
+              <option value="major">Major</option>
+              <option value="severe">Severe</option>
+            </select>
+          </div>
+          <div class="date-filters">
+            <input type="date" id="filter-date-from" onchange="loadCoachingRecords()" placeholder="From">
+            <input type="date" id="filter-date-to" onchange="loadCoachingRecords()" placeholder="To">
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Employee</th>
+                <th>Warning Level</th>
+                <th>Category</th>
+                <th>Coach</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="coaching-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- New Coaching Page -->
+      <div id="new-coaching-page" class="page">
+        <h2 id="coaching-form-title">New Coaching Record</h2>
+        <form id="coaching-form" class="form-container" onsubmit="submitCoachingForm(event)">
+          <input type="hidden" id="coaching-edit-id" value="">
+          <div class="form-section">
+            <h3>Basic Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="coaching-employee">Employee *</label>
+                <select id="coaching-employee" required></select>
+              </div>
+              <div class="form-group">
+                <label for="coaching-supervisor">Coach *</label>
+                <select id="coaching-supervisor" required></select>
+              </div>
+              <div class="form-group">
+                <label for="coaching-category">Category *</label>
+                <select id="coaching-category" required></select>
+              </div>
+              <div class="form-group">
+                <label for="coaching-offense">Specific Offense *</label>
+                <select id="coaching-offense" required>
+                  <option value="">Select Category First</option>
+                </select>
+              </div>
+              <div class="form-group" id="custom-offense-group" style="display: none;">
+                <label for="custom-offense-text">Describe the Offense *</label>
+                <input type="text" id="custom-offense-text" placeholder="e.g., Late arrival, Tardiness, Unauthorized absence...">
+              </div>
+              <div class="form-group" id="custom-severity-group" style="display: none;">
+                <label for="custom-offense-severity">Offense Severity *</label>
+                <select id="custom-offense-severity">
+                  <option value="minor">Minor Offense (Verbal → Written → Final → Suspension → Termination)</option>
+                  <option value="major">Major Offense (Written → Final → Suspension → Termination)</option>
+                  <option value="grave">Grave Offense (Final → Suspension → Termination)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="coaching-type">Warning Level *</label>
+                <select id="coaching-type" required>
+                  <option value="">Select Offense First</option>
+                  <option value="verbal_warning">Verbal Warning</option>
+                  <option value="written_warning">Written Warning</option>
+                  <option value="final_warning">Final Written Warning</option>
+                  <option value="suspension">Suspension</option>
+                  <option value="termination">Termination</option>
+                </select>
+              </div>
+            </div>
+            <div id="coaching-history-notice"></div>
+            <div id="offense-severity-notice"></div>
+            <div class="form-group">
+              <label for="policy-reference">Policy Reference (Auto-populated)</label>
+              <textarea id="policy-reference" rows="4" placeholder="Auto-populated when category is selected. You can edit or clear this field." style="font-size: 0.9em;"></textarea>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="coaching-date">Coaching Date *</label>
+                <input type="date" id="coaching-date" required>
+              </div>
+              <div class="form-group">
+                <label for="coaching-time">Time</label>
+                <select id="coaching-time">
+                  <option value="">Select Time</option>
+                  <option value="08:00">8:00 AM</option>
+                  <option value="08:30">8:30 AM</option>
+                  <option value="09:00">9:00 AM</option>
+                  <option value="09:30">9:30 AM</option>
+                  <option value="10:00">10:00 AM</option>
+                  <option value="10:30">10:30 AM</option>
+                  <option value="11:00">11:00 AM</option>
+                  <option value="11:30">11:30 AM</option>
+                  <option value="12:00">12:00 PM</option>
+                  <option value="12:30">12:30 PM</option>
+                  <option value="13:00">1:00 PM</option>
+                  <option value="13:30">1:30 PM</option>
+                  <option value="14:00">2:00 PM</option>
+                  <option value="14:30">2:30 PM</option>
+                  <option value="15:00">3:00 PM</option>
+                  <option value="15:30">3:30 PM</option>
+                  <option value="16:00">4:00 PM</option>
+                  <option value="16:30">4:30 PM</option>
+                  <option value="17:00">5:00 PM</option>
+                  <option value="17:30">5:30 PM</option>
+                  <option value="18:00">6:00 PM</option>
+                  <option value="18:30">6:30 PM</option>
+                  <option value="19:00">7:00 PM</option>
+                  <option value="19:30">7:30 PM</option>
+                  <option value="20:00">8:00 PM</option>
+                  <option value="20:30">8:30 PM</option>
+                  <option value="21:00">9:00 PM</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="coaching-location">Location</label>
+                <input type="text" id="coaching-location" placeholder="e.g., Principal's Office">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Issue Details</h3>
+            <div class="form-group">
+              <label for="issue-description">Specific Issue / Behavior *</label>
+              <textarea id="issue-description" rows="4" required placeholder="Describe the specific issue, behavior, or performance concern..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="prior-discussions">Prior Discussions Referenced</label>
+              <textarea id="prior-discussions" rows="3" placeholder="Reference any previous coaching sessions..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Expectations & Timeline</h3>
+            <div class="form-group">
+              <label for="expected-improvement">Expected Improvement *</label>
+              <textarea id="expected-improvement" rows="4" required placeholder="Clearly describe measurable improvement goals..."></textarea>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="improvement-timeline">Timeline *</label>
+                <select id="improvement-timeline" required>
+                  <option value="">Select Timeline</option>
+                  <option value="Immediate">Immediate</option>
+                  <option value="7 days">7 Days</option>
+                  <option value="14 days">14 Days</option>
+                  <option value="30 days">30 Days</option>
+                  <option value="60 days">60 Days</option>
+                  <option value="90 days">90 Days</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="follow-up-date">Follow-up Date</label>
+                <input type="date" id="follow-up-date">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Support & Consequences</h3>
+            <div class="form-group">
+              <label for="support-offered">Support / Resources Offered</label>
+              <textarea id="support-offered" rows="3" placeholder="Training, mentorship, resources..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="consequences">Consequences if Not Improved</label>
+              <textarea id="consequences" rows="3" placeholder="Potential consequences..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Employee Response (Due Process Requirement)</h3>
+            <div class="due-process-notice" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+              <strong>DOLE Due Process Requirement:</strong> Under Philippine labor law, employees must be given the opportunity to explain their side before any disciplinary action. This section fulfills that requirement.
+            </div>
+            <div class="form-group">
+              <label for="employee-explanation">Employee's Explanation / Response</label>
+              <textarea id="employee-explanation" rows="4" placeholder="Document the employee's explanation or response to the allegations..."></textarea>
+              <small class="form-hint">Record the employee's side of the story as required by the Two-Notice Rule</small>
+            </div>
+            <div class="form-group">
+              <label for="employee-comments">Additional Employee Comments</label>
+              <textarea id="employee-comments" rows="3" placeholder="Any additional comments the employee wishes to add..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Administrative Conference (If Applicable)</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="conference-held">
+                  Administrative hearing/conference was conducted
+                </label>
+              </div>
+              <div class="form-group">
+                <label for="conference-date">Conference Date</label>
+                <input type="date" id="conference-date">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="conference-attendees">Attendees Present</label>
+              <input type="text" id="conference-attendees" placeholder="Names of persons present during the conference">
+            </div>
+            <div class="form-group">
+              <label for="conference-summary">Conference Summary</label>
+              <textarea id="conference-summary" rows="3" placeholder="Summary of discussions during the conference..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Witness & Documentation</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="witness-name">Witness Name</label>
+                <input type="text" id="witness-name">
+                <small class="form-hint">Required if employee refuses to sign</small>
+              </div>
+              <div class="form-group">
+                <label for="witness-position">Witness Position</label>
+                <input type="text" id="witness-position" placeholder="e.g., HR Officer, Department Head">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="employee-refused-sign">
+                Employee refused to sign this document
+              </label>
+              <small class="form-hint" style="display: block; margin-top: 4px;">If checked, witness signature is required as proof of notice delivery</small>
+            </div>
+            <!-- Status is automatically set to 'open' on create -->
+          </div>
+
+          <div class="form-section signatures-form-section">
+            <h3>Signatures & Acknowledgment</h3>
+            <div class="signature-grid">
+              <div class="signature-box" id="form-supervisor-signature-box">
+                <h4>Supervisor/Coach Signature</h4>
+                <div id="form-supervisor-signature-display" class="signature-display">
+                  <p class="signature-pending">Click to sign</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openFormSignature('supervisor')">Sign</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="clearFormSignature('supervisor')" style="display:none;" id="clear-supervisor-sig">Clear</button>
+                <input type="hidden" id="form-supervisor-signature" name="supervisor_signature">
+              </div>
+
+              <div class="signature-box" id="form-employee-signature-box">
+                <h4>Employee Acknowledgment</h4>
+                <div id="form-employee-signature-display" class="signature-display">
+                  <p class="signature-pending">Click to sign</p>
+                </div>
+                <div class="signature-buttons">
+                  <button type="button" class="btn btn-primary btn-sm" onclick="openFormSignature('employee')">Sign</button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="clearFormSignature('employee')" style="display:none;" id="clear-employee-sig">Clear</button>
+                </div>
+                <input type="hidden" id="form-employee-signature" name="employee_signature">
+              </div>
+
+              <div class="signature-box" id="form-witness-signature-box">
+                <h4>Witness Signature</h4>
+                <div id="form-witness-signature-display" class="signature-display">
+                  <p class="signature-pending">Click to sign (if applicable)</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openFormSignature('witness')">Sign</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="clearFormSignature('witness')" style="display:none;" id="clear-witness-sig">Clear</button>
+                <input type="hidden" id="form-witness-signature" name="witness_signature">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="coaching-submit-btn" class="btn btn-primary">Create Coaching Record</button>
+            <button type="button" class="btn btn-secondary" onclick="resetCoachingForm()">Clear Form</button>
+            <button type="button" id="coaching-cancel-edit-btn" class="btn btn-secondary" onclick="cancelCoachingEdit()" style="display:none;">Cancel Edit</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Coaching Detail Page -->
+      <div id="coaching-detail-page" class="page">
+        <div class="page-actions">
+          <button class="btn btn-secondary" onclick="downloadPDF(currentCoachingId)">Download PDF</button>
+          <button class="btn btn-secondary" onclick="showPage('coaching')">Back to List</button>
+        </div>
+        <div id="coaching-detail-content"></div>
+      </div>
+
+      <!-- Employee Timeline Page -->
+      <div id="timeline-page" class="page">
+        <div class="page-actions">
+          <button class="btn btn-secondary" onclick="showPage('employees')">Back to Employees</button>
+        </div>
+        <div id="timeline-content"></div>
+      </div>
+
+      <!-- Reports Page -->
+      <div id="reports-page" class="page">
+        <div class="page-actions">
+          <div class="search-filters">
+            <input type="date" id="report-date-from">
+            <input type="date" id="report-date-to">
+            <button class="btn btn-secondary" onclick="loadReports()">Generate Report</button>
+          </div>
+          <button class="btn btn-primary" onclick="exportToCSV()">Export to CSV</button>
+        </div>
+        <div class="reports-grid">
+          <div class="report-card">
+            <h3>Coaching by Category</h3>
+            <div id="report-by-category"></div>
+          </div>
+          <div class="report-card">
+            <h3>Coaching by Warning Level</h3>
+            <div id="report-by-level"></div>
+          </div>
+          <div class="report-card">
+            <h3>Monthly Trend</h3>
+            <div id="report-by-month"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Page -->
+      <div id="analytics-page" class="page">
+        <div class="page-actions">
+          <div class="search-filters">
+            <select id="analytics-period">
+              <option value="30">Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+              <option value="180">Last 6 Months</option>
+              <option value="365">Last Year</option>
+              <option value="all">All Time</option>
+            </select>
+            <button class="btn btn-secondary" onclick="loadAnalytics()">Refresh</button>
+          </div>
+        </div>
+
+        <div class="analytics-summary">
+          <div class="analytics-card">
+            <div class="analytics-label">Total Coachings</div>
+            <div class="analytics-value" id="analytics-total">0</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-label">Open Cases</div>
+            <div class="analytics-value analytics-warning" id="analytics-open">0</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-label">Resolved</div>
+            <div class="analytics-value analytics-success" id="analytics-resolved">0</div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-label">Avg. Resolution Time</div>
+            <div class="analytics-value" id="analytics-avg-time">-</div>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="analytics-section">
+            <h3>Coachings by Category</h3>
+            <div id="analytics-by-category" class="analytics-chart"></div>
+          </div>
+          <div class="analytics-section">
+            <h3>Coachings by Warning Level</h3>
+            <div id="analytics-by-level" class="analytics-chart"></div>
+          </div>
+          <div class="analytics-section">
+            <h3>Monthly Trend</h3>
+            <div id="analytics-trend" class="analytics-chart"></div>
+          </div>
+          <div class="analytics-section">
+            <h3>Top Coached Employees</h3>
+            <div id="analytics-top-employees" class="analytics-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Management Page -->
+      <div id="users-page" class="page">
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="showUserModal()">Add User</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Linked Employee</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="settings-page" class="page">
+        <form id="settings-form" class="form-container" onsubmit="saveSettings(event)">
+          <div class="form-section">
+            <h3>Company Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="setting-company-name">Company Name</label>
+                <input type="text" id="setting-company-name">
+              </div>
+              <div class="form-group">
+                <label for="setting-email">Contact Email</label>
+                <input type="email" id="setting-email">
+              </div>
+              <div class="form-group">
+                <label for="setting-phone">Phone</label>
+                <input type="tel" id="setting-phone">
+              </div>
+              <div class="form-group">
+                <label for="setting-followup-days">Default Follow-up Days</label>
+                <input type="number" id="setting-followup-days" min="1" max="365">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="setting-address">Address</label>
+              <textarea id="setting-address" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="setting-disclaimer">Disclaimer Text (for PDF forms)</label>
+              <textarea id="setting-disclaimer" rows="4"></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Email Notifications</h3>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="setting-email-enabled">
+                Enable Email Notifications
+              </label>
+            </div>
+            <div class="form-grid" id="smtp-settings">
+              <div class="form-group">
+                <label for="setting-smtp-host">SMTP Host</label>
+                <input type="text" id="setting-smtp-host">
+              </div>
+              <div class="form-group">
+                <label for="setting-smtp-port">SMTP Port</label>
+                <input type="number" id="setting-smtp-port" value="587">
+              </div>
+              <div class="form-group">
+                <label for="setting-smtp-user">SMTP Username</label>
+                <input type="text" id="setting-smtp-user">
+              </div>
+              <div class="form-group">
+                <label for="setting-smtp-password">SMTP Password</label>
+                <input type="password" id="setting-smtp-password">
+              </div>
+              <div class="form-group">
+                <label for="setting-smtp-from">From Email</label>
+                <input type="email" id="setting-smtp-from">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Notion Integration</h3>
+            <p class="form-help">Connect to your Notion database to sync teacher/employee data.</p>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="setting-notion-api-key">Notion API Key</label>
+                <input type="password" id="setting-notion-api-key" placeholder="ntn_...">
+                <small class="form-hint">Get your API key from Notion Integrations</small>
+              </div>
+              <div class="form-group">
+                <label for="setting-notion-database-id">Notion Database ID</label>
+                <input type="text" id="setting-notion-database-id" placeholder="1abd37d6663080ae...">
+                <small class="form-hint">The ID from your Notion database URL</small>
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="saveNotionSettings()">Save Notion Settings</button>
+            <button type="button" class="btn btn-secondary" onclick="testNotionConnection()">Test Connection</button>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- Employee Modal -->
+  <div id="employee-modal" class="modal">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h3 id="employee-modal-title">Add Employee</h3>
+        <button class="modal-close" onclick="closeEmployeeModal()">&times;</button>
+      </div>
+      <form id="employee-form" onsubmit="submitEmployeeForm(event)">
+        <input type="hidden" id="employee-id">
+        <div class="form-section">
+          <h4>Basic Information</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="emp-number">Employee ID/Number</label>
+              <input type="text" id="emp-number" placeholder="e.g., EMP001">
+            </div>
+            <div class="form-group">
+              <label for="emp-first-name">First Name *</label>
+              <input type="text" id="emp-first-name" required>
+            </div>
+            <div class="form-group">
+              <label for="emp-last-name">Last Name *</label>
+              <input type="text" id="emp-last-name" required>
+            </div>
+            <div class="form-group">
+              <label for="emp-email">Email</label>
+              <input type="email" id="emp-email">
+            </div>
+            <div class="form-group">
+              <label for="emp-phone">Phone</label>
+              <input type="tel" id="emp-phone">
+            </div>
+            <div class="form-group">
+              <label for="emp-position">Position *</label>
+              <input type="text" id="emp-position" required>
+            </div>
+            <div class="form-group">
+              <label for="emp-hire-date">Hire Date *</label>
+              <input type="date" id="emp-hire-date" required>
+            </div>
+            <div class="form-group">
+              <label for="emp-role-start-date">Current Role Start</label>
+              <input type="date" id="emp-role-start-date">
+            </div>
+            <div class="form-group">
+              <label for="emp-supervisor">Supervisor</label>
+              <select id="emp-supervisor"></select>
+            </div>
+            <div class="form-group">
+              <label for="emp-status">Status</label>
+              <select id="emp-status">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="terminated">Terminated</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="emp-union">
+                Union Member
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h4>Emergency Contact</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="emp-emergency-name">Contact Name</label>
+              <input type="text" id="emp-emergency-name">
+            </div>
+            <div class="form-group">
+              <label for="emp-emergency-phone">Contact Phone</label>
+              <input type="tel" id="emp-emergency-phone">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="emp-notes">Notes</label>
+          <textarea id="emp-notes" rows="2"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Employee</button>
+          <button type="button" class="btn btn-secondary" onclick="closeEmployeeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div id="user-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="user-modal-title">Add User</h3>
+        <button class="modal-close" onclick="closeUserModal()">&times;</button>
+      </div>
+      <form id="user-form" onsubmit="submitUserForm(event)">
+        <input type="hidden" id="user-id">
+        <div class="form-group">
+          <label for="user-username">Username *</label>
+          <input type="text" id="user-username" required>
+        </div>
+        <div class="form-group">
+          <label for="user-email">Email *</label>
+          <input type="email" id="user-email" required>
+        </div>
+        <div class="form-group" id="password-group">
+          <label for="user-password">Password *</label>
+          <input type="password" id="user-password">
+        </div>
+        <div class="form-group">
+          <label for="user-role">Role *</label>
+          <select id="user-role" required>
+            <option value="employee">Employee</option>
+            <option value="supervisor">Coach</option>
+            <option value="hr">HR Manager</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="user-employee">Link to Employee</label>
+          <select id="user-employee"></select>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="user-active" checked>
+            Active
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save User</button>
+          <button type="button" class="btn btn-secondary" onclick="closeUserModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Progress Note Modal -->
+  <div id="progress-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add Progress Note</h3>
+        <button class="modal-close" onclick="closeProgressModal()">&times;</button>
+      </div>
+      <form id="progress-form" onsubmit="submitProgressNote(event)">
+        <input type="hidden" id="progress-coaching-id">
+        <div class="form-group">
+          <label for="progress-date">Date *</label>
+          <input type="date" id="progress-date" required>
+        </div>
+        <div class="form-group">
+          <label for="progress-status">Progress Status *</label>
+          <select id="progress-status" required>
+            <option value="">Select Status</option>
+            <option value="improved">Improved</option>
+            <option value="no_change">No Change</option>
+            <option value="declined">Declined</option>
+            <option value="resolved">Resolved - Close Coaching</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="progress-notes">Notes *</label>
+          <textarea id="progress-notes" rows="4" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="progress-next-steps">Next Steps</label>
+          <textarea id="progress-next-steps" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="progress-created-by">Recorded By *</label>
+          <select id="progress-created-by" required></select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Add Progress Note</button>
+          <button type="button" class="btn btn-secondary" onclick="closeProgressModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Signature Modal -->
+  <div id="signature-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="signature-title">Sign Document</h3>
+        <button class="modal-close" onclick="closeSignatureModal()">&times;</button>
+      </div>
+      <div class="signature-pad-container">
+        <p>Please sign in the box below:</p>
+        <canvas id="signature-canvas" width="500" height="200"></canvas>
+        <div class="signature-actions">
+          <button type="button" class="btn btn-secondary" onclick="clearSignature()">Clear</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" onclick="submitSignature()">Submit Signature</button>
+        <button type="button" class="btn btn-secondary" onclick="closeSignatureModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attachment Modal -->
+  <div id="attachment-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Upload Attachment</h3>
+        <button class="modal-close" onclick="closeAttachmentModal()">&times;</button>
+      </div>
+      <form id="attachment-form" onsubmit="submitAttachment(event)">
+        <input type="hidden" id="attachment-coaching-id">
+        <div class="form-group">
+          <label for="attachment-file">File *</label>
+          <input type="file" id="attachment-file" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif">
+        </div>
+        <div class="form-group">
+          <label for="attachment-description">Description</label>
+          <input type="text" id="attachment-description" placeholder="Brief description of the file">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Upload</button>
+          <button type="button" class="btn btn-secondary" onclick="closeAttachmentModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js?v=20251210c"></script>
+</body>
+</html>
